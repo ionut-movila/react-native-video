@@ -31,6 +31,8 @@ import java.util.List;
 @TargetApi(16)
 public final class ExoPlayerView extends FrameLayout {
 
+    private static final String TAG = "ExoPlayerView";
+
     private final View surfaceView;
     private final View shutterView;
     private final SubtitleView subtitleLayout;
@@ -130,6 +132,12 @@ public final class ExoPlayerView extends FrameLayout {
 
     }
 
+    public void updateOnFullScreenExit() {
+        Log.d(TAG, "updateOnFullScreenExit");
+        layout.requestLayout();
+        post(measureAndLayout);
+    }
+
     /**
      * Get the view onto which video is rendered. This is either a {@link SurfaceView} (default)
      * or a {@link TextureView} if the {@code use_texture_view} view attribute has been set to true.
@@ -182,6 +190,8 @@ public final class ExoPlayerView extends FrameLayout {
         public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
             boolean isInitialRatio = layout.getAspectRatio() == 0;
             layout.setAspectRatio(height == 0 ? 1 : (width * pixelWidthHeightRatio) / height);
+
+            Log.d(TAG, "onVideoSizeChanged: " + width + "x" + height + " : " + pixelWidthHeightRatio);
 
             // React native workaround for measuring and layout on initial load.
             if (isInitialRatio) {

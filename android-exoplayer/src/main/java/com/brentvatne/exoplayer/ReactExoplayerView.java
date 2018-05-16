@@ -1,6 +1,7 @@
 package com.brentvatne.exoplayer;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -8,6 +9,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 
 import com.brentvatne.react.R;
@@ -102,6 +106,10 @@ class ReactExoplayerView extends FrameLayout implements
     private final ThemedReactContext themedReactContext;
     private final AudioManager audioManager;
     private final AudioBecomingNoisyReceiver audioBecomingNoisyReceiver;
+
+    private Dialog mFullScreenDialog;
+    private boolean mExoPlayerFullscreen = false;
+    private ViewParent mInitialPlayerViewParent;
 
     private final Handler progressHandler = new Handler() {
         @Override
@@ -212,6 +220,8 @@ class ReactExoplayerView extends FrameLayout implements
             setPlayWhenReady(!isPaused);
             playerNeedsSource = true;
 
+            this.initFullscreenDialog();
+
             PlaybackParameters params = new PlaybackParameters(rate, 1f);
             player.setPlaybackParameters(params);
         }
@@ -227,6 +237,69 @@ class ReactExoplayerView extends FrameLayout implements
 
             eventEmitter.loadStart();
             loadVideoStarted = true;
+        }
+    }
+
+    private void initFullscreenDialog() {
+
+        mFullScreenDialog = new Dialog(getContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen) {
+            public void onBackPressed() {
+                if (mExoPlayerFullscreen) {
+                    closeFullscreenDialog();
+                }
+                super.onBackPressed();
+            }
+        };
+    }
+
+    private void closeFullscreenDialog() {
+        if (mExoPlayerFullscreen) {
+            ((ViewGroup) exoPlayerView.getParent()).removeView(exoPlayerView);
+            ((ViewGroup) mInitialPlayerViewParent).addView(exoPlayerView);
+
+//            final ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+//            ((ViewGroup) mInitialPlayerViewParent).addView(exoPlayerView, layoutParams);
+//            exoPlayerView.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    LayoutParams layoutParams = new LayoutParams(1080, 731);
+//                    exoPlayerView.setLayoutParams(layoutParams);
+//                    exoPlayerView.updateOnFullScreenExit();
+//                    testMeasure("closeFullscreenDialog: ");
+//                }
+//            });
+
+//            exoPlayerView.requestLayout();
+//            exoPlayerView.updateOnFullScreenExit();
+
+            mExoPlayerFullscreen = false;
+            mFullScreenDialog.dismiss();
+            eventEmitter.fullScreenExit();
+        } else {
+            Log.d(TAG, "not in full screen, nothing to close");
+        }
+    }
+
+    private void testMeasure(String tag) {
+        View parentAsView = (View) mInitialPlayerViewParent;
+        Log.d(TAG, tag + exoPlayerView.getWidth() + "x" + exoPlayerView.getHeight());
+        Log.d(TAG, tag + "parentView: " + parentAsView.getWidth() + "x" + parentAsView.getHeight());
+    }
+
+    private void openFullscreenDialog() {
+        if (!mExoPlayerFullscreen) {
+            mInitialPlayerViewParent = exoPlayerView.getParent();
+
+//            this.testMeasure("openFullscreenDialog: ");
+
+            ((ViewGroup) mInitialPlayerViewParent).removeView(exoPlayerView);
+            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            mFullScreenDialog.addContentView(exoPlayerView, layoutParams);
+//            exoPlayerView.setResizeMode(ResizeMode.RESIZE_MODE_CENTER_CROP);
+            mExoPlayerFullscreen = true;
+            mFullScreenDialog.show();
+        } else {
+            Log.d(TAG, "already in full screen");
         }
     }
 
@@ -504,8 +577,7 @@ class ReactExoplayerView extends FrameLayout implements
                             decoderInitializationException.decoderName);
                 }
             }
-        }
-        else if (e.type == ExoPlaybackException.TYPE_SOURCE) {
+        } else if (e.type == ExoPlaybackException.TYPE_SOURCE) {
             ex = e.getSourceException();
             errorString = getResources().getString(R.string.unrecognized_media_format);
         }
@@ -621,12 +693,12 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setRateModifier(float newRate) {
-      rate = newRate;
+        rate = newRate;
 
-      if (player != null) {
-          PlaybackParameters params = new PlaybackParameters(rate, 1f);
-          player.setPlaybackParameters(params);
-      }
+        if (player != null) {
+            PlaybackParameters params = new PlaybackParameters(rate, 1f);
+            player.setPlaybackParameters(params);
+        }
     }
 
 
@@ -636,5 +708,14 @@ class ReactExoplayerView extends FrameLayout implements
 
     public void setDisableFocus(boolean disableFocus) {
         this.disableFocus = disableFocus;
+    }
+
+    public void setFullScreen(boolean fullscreen) {
+        Log.d(TAG, "setFullScreen: " + fullscreen);
+        if (fullscreen) {
+            this.openFullscreenDialog();
+        } else {
+            this.closeFullscreenDialog();
+        }
     }
 }

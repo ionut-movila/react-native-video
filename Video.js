@@ -46,6 +46,12 @@ export default class Video extends Component {
     }
   };
 
+    _onFullScreenExit = (event) => {
+    if (this.props.onFullScreenExit) {
+      this.props.onFullScreenExit(event.nativeEvent);
+    }
+  };
+
   _onLoad = (event) => {
     if (this.props.onLoad) {
       this.props.onLoad(event.nativeEvent);
@@ -192,6 +198,7 @@ export default class Video extends Component {
         patchVer: source.patchVer || 0,
       },
       onVideoLoadStart: this._onLoadStart,
+        onFullScreenExit: this._onFullScreenExit,
       onVideoLoad: this._onLoad,
       onVideoError: this._onError,
       onVideoProgress: this._onProgress,
