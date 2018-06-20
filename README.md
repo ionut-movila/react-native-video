@@ -184,17 +184,13 @@ using System.Collections.Generic;
        ref={(ref) => {
          this.player = ref
        }}                                      // Store reference
-       playInBackground={true|false}           // Audio continues to play when app entering background. Default false
-       playWhenInactive={true|false}           // [iOS] Video continues to play when control or notification center are shown. Default false
        onBuffer={this.onBuffer}                // Callback when remote video is buffering
        onEnd={this.onEnd}                      // Callback when playback finishes
        onError={this.videoError}               // Callback when video cannot be loaded
        onFullscreenPlayerWillPresent={this.fullScreenPlayerWillPresent} // Callback before fullscreen starts
        onFullscreenPlayerDidPresent={this.fullScreenPlayerDidPresent}   // Callback after fullscreen started
        onFullscreenPlayerWillDismiss={this.fullScreenPlayerWillDismiss} // Callback before fullscreen stops
-       onFullscreenPlayerDidDismiss={this.fullScreenPlayerDidDissmiss}  // Callback after fullscreen stopped
-       onLoadStart={this.loadStart}            // Callback when video starts to load
-       onLoad={this.setDuration}               // Callback when video loads
+       onFullscreenPlayerDidDismiss={this.fullScreenPlayerDidDismiss}  // Callback after fullscreen stopped
        onProgress={this.setTime}               // Callback every ~250ms with currentTime
        onTimedMetadata={this.onTimedMetadata}  // Callback when the stream receive some metadata
        style={styles.backgroundVideo} />
@@ -221,9 +217,12 @@ var styles = StyleSheet.create({
 ```
 
 ### Configurable props
+* [allowsExternalPlayback](#allowsexternalplayback)
 * [ignoreSilentSwitch](#ignoresilentswitch)
 * [muted](#muted)
 * [paused](#paused)
+* [playInBackground](#playinbackground)
+* [playWhenInactive](#playwheninactive)
 * [poster](#poster)
 * [posterResizeMode](#posterresizemode)
 * [progressUpdateInterval](#progressupdateinterval)
@@ -231,7 +230,21 @@ var styles = StyleSheet.create({
 * [repeat](#repeat)
 * [resizeMode](#resizemode)
 * [selectedTextTrack](#selectedtexttrack)
+* [stereoPan](#stereopan)
+* [textTracks](#texttracks)
+* [useTextureView](#usetextureview)
 * [volume](#volume)
+
+### Event props
+* [onLoad](#onload)
+* [onLoadStart](#onloadstart)
+
+#### allowsExternalPlayback
+Indicates whether the player allows switching to external playback mode such as AirPlay or HDMI.
+* **true (default)** - allow switching to external playback mode
+* **false** -  Don't allow switching to external playback mode
+
+Platforms: iOS
 
 #### ignoreSilentSwitch
 Controls the iOS silent switch behavior
@@ -255,6 +268,24 @@ Controls whether the media is paused
 
 Platforms: all
 
+#### playInBackground
+Determine whether the media should continue playing while the app is in the background. This allows customers to continue listening to the audio.
+* **false (default)** - Don't continue playing the media
+* **true** - Continue playing the media
+
+To use this feature on iOS, you must:
+* [Enable Background Audio](https://developer.apple.com/library/archive/documentation/Audio/Conceptual/AudioSessionProgrammingGuide/AudioSessionBasics/AudioSessionBasics.html#//apple_ref/doc/uid/TP40007875-CH3-SW3) in your Xcode project
+* Set the ignoreSilentSwitch prop to "ignore"
+
+Platforms: Android ExoPlayer, Android MediaPlayer, iOS
+
+#### playWhenInactive
+Determine whether the media should continue playing when notifications or the Control Center are in front of the video.
+* **false (default)** - Don't continue playing the media
+* **true** - Continue playing the media
+
+Platforms: iOS
+
 #### poster
 An image to display while the video is loading
 <br>Value: string with a URL for the poster, e.g. "https://baconmockup.com/300/200/"
@@ -275,11 +306,11 @@ Platforms: all
 #### progressUpdateInterval
 Delay in milliseconds between onProgress events in milliseconds.
 
-Default: 250.0.
+Default: 250.0
 
 Platforms: all
 
-#### rate
+### rate
 Speed at which the media should play. 
 * **0.0** - Pauses the video
 * **1.0** - Play at normal speed
@@ -331,17 +362,133 @@ Type | Value | Description
 "language" | string | Display the text track with the language specified as the Value, e.g. "fr"
 "index" | number | Display the text track with the index specified as the value, e.g. 0
 
-Both iOS & Android offer Settings to enable Captions for hearing impaired people. If "system" is selected and the Captions Setting is enabled, iOS/Android will look for a caption that matches that customer's language and display it.
+Both iOS & Android (only 4.4 and higher) offer Settings to enable Captions for hearing impaired people. If "system" is selected and the Captions Setting is enabled, iOS/Android will look for a caption that matches that customer's language and display it. 
 
 If a track matching the specified Type (and Value if appropriate) is unavailable, no text track will be displayed. If multiple tracks match the criteria, the first match will be used.
 
 Platforms: Android ExoPlayer, iOS
+
+#### stereoPan
+Adjust the balance of the left and right audio channels.  Any value between –1.0 and 1.0 is accepted.
+* **-1.0** - Full left
+* **0.0 (default)** - Center
+* **1.0** - Full right
+
+Platforms: Android MediaPlayer
+
+#### textTracks
+Load one or more "sidecar" text tracks. This takes an array of objects representing each track. Each object should have the format:
+
+Property | Description
+--- | ---
+title | Descriptive name for the track
+language | 2 letter [ISO 639-1 code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) representing the language
+type | Mime type of the track<br> * TextTrackType.SRT - .srt SubRip Subtitle<br> * TextTrackType.TTML - .ttml TTML<br> * TextTrackType.VTT - .vtt WebVTT
+uri | URL for the text track. Currently, only tracks hosted on a webserver are supported
+
+Example:
+```
+import { TextTrackType }, Video from 'react-native-video';
+
+textTracks={[
+  {
+    title: "English CC",
+    language: "en",
+    type: "text/vtt", TextTrackType.VTT,
+    uri: "https://bitdash-a.akamaihd.net/content/sintel/subtitles/subtitles_en.vtt"
+  },
+  {
+    title: "Spanish Subtitles",
+    language: "es",
+    type: "application/x-subrip", TextTrackType.SRT,
+    uri: "https://durian.blender.org/wp-content/content/subtitles/sintel_es.srt"
+  }
+]}
+```
+
+This isn't support on iOS because AVPlayer doesn't support it. Text tracks must be loaded as part of an HLS playlist.
+
+Platforms: Android ExoPlayer
+
+#### useTextureView
+Output to a TextureView instead of the default SurfaceView. In general, you will want to use SurfaceView because it is more efficient and provides better performance. However, SurfaceViews has two limitations:
+* It can't be animated, transformed or scaled
+* You can't overlay multiple SurfaceViews
+
+useTextureView can only be set at same time you're setting the source.
+
+* **false (default)** - Use a SurfaceView
+* **true** - Use a TextureView
+
+Platforms: Android ExoPlayer
 
 #### volume
 Adjust the volume.
 * **1.0 (default)** - Play at full volume
 * **0.0** - Mute the audio
 * **Other values** - Reduce volume
+
+Platforms: all
+
+### Event props
+
+#### onLoad
+Callback function that is called when the media is loaded and ready to play.
+
+Payload:
+
+Property | Type | Description
+--- | --- | ---
+currentPosition | number | Time in seconds where the media will start
+duration | number | Length of the media in seconds
+naturalSize | object | Properties:<br> * width - Width in pixels that the video was encoded at<br> * height - Height in pixels that the video was encoded at<br> * orientation - "portrait" or "landscape"
+textTracks | array | An array of text track info objects with the following properties:<br> * index - Index number<br> * title - Description of the track<br> * language - 2 letter [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language code<br> * type - Mime type of track
+
+Example:
+```
+{ 
+  canPlaySlowForward: true,
+  canPlayReverse: false,
+  canPlaySlowReverse: false,
+  canPlayFastForward: false,
+  canStepForward: false,
+  canStepBackward: false,
+  currentTime: 0,
+  duration: 5910.208984375,
+  naturalSize: {
+     height: 1080
+     orientation: 'landscape'
+     width: '1920'
+  },
+  textTracks: [
+    { title: '#1 French', language: 'fr', index: 0, type: 'text/vtt' },
+    { title: '#2 English CC', language: 'en', index: 1, type: 'text/vtt' },
+    { title: '#3 English Director Commentary', language: 'en', index: 2, type: 'text/vtt' }
+  ]
+}
+```
+
+Platforms: all
+
+#### onLoadStart
+Callback function that is called when the media starts loading.
+
+Payload:
+
+Property | Description
+--- | ---
+isNetwork | Boolean indicating if the media is being loaded from the network
+type | Type of the media. Not available on Windows
+uri | URI for the media source. Not available on Windows
+
+Example:
+```
+{
+  isNetwork: true,
+  type: '',
+  uri: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8'
+}
+```
 
 Platforms: all
 

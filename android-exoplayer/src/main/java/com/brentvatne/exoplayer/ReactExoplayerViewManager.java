@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import com.facebook.react.bridge.Dynamic;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -28,6 +29,7 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
     private static final String PROP_SELECTED_TEXT_TRACK = "selectedTextTrack";
     private static final String PROP_SELECTED_TEXT_TRACK_TYPE = "type";
     private static final String PROP_SELECTED_TEXT_TRACK_VALUE = "value";
+    private static final String PROP_TEXT_TRACKS = "textTracks";
     private static final String PROP_PAUSED = "paused";
     private static final String PROP_MUTED = "muted";
     private static final String PROP_VOLUME = "volume";
@@ -37,6 +39,7 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
     private static final String PROP_PLAY_IN_BACKGROUND = "playInBackground";
     private static final String PROP_DISABLE_FOCUS = "disableFocus";
     private static final String PROP_FULLSCREEN = "fullscreen";
+    private static final String PROP_USE_TEXTURE_VIEW = "useTextureView";
 
     @Override
     public String getName() {
@@ -130,6 +133,12 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
         videoView.setSelectedTextTrack(typeString, value);
     }
 
+    @ReactProp(name = PROP_TEXT_TRACKS)
+    public void setPropTextTracks(final ReactExoplayerView videoView,
+                                  @Nullable ReadableArray textTracks) {
+        videoView.setTextTracks(textTracks);
+    }
+
     @ReactProp(name = PROP_PAUSED, defaultBoolean = false)
     public void setPaused(final ReactExoplayerView videoView, final boolean paused) {
         videoView.setPausedModifier(paused);
@@ -173,6 +182,11 @@ public class ReactExoplayerViewManager extends ViewGroupManager<ReactExoplayerVi
     @ReactProp(name = PROP_FULLSCREEN, defaultBoolean = false)
     public void setFullscreen(final ReactExoplayerView videoView, final boolean fullscreen) {
         videoView.setFullscreen(fullscreen);
+    }
+
+    @ReactProp(name = PROP_USE_TEXTURE_VIEW, defaultBoolean = false)
+    public void setUseTextureView(final ReactExoplayerView videoView, final boolean useTextureView) {
+        videoView.setUseTextureView(useTextureView);
     }
 
     private boolean startsWithValidScheme(String uriString) {
